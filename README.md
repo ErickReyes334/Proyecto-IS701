@@ -1,135 +1,200 @@
-# Turborepo starter
+# Cognivision – Proyecto IS701
+Clasificación de **estados cognitivos y mentales** a partir de rostros usando **DeepFace** (embeddings faciales) + un **modelo ML** propio (Random Forest / MLP) y un **frontend** para interacción en tiempo real.
 
-This Turborepo starter is maintained by the Turborepo core team.
+> Monorepo con `apps/` (Django + Next.js) y `packages/` para módulos compartidos.
 
-## Using this example
+---
 
-Run the following command:
+## 🧭 Tabla de contenidos
+- [Arquitectura](#arquitectura)
+- [Requisitos](#requisitos)
+- [Estructura del repo](#estructura-del-repo)
+- [Configuración rápida](#configuración-rápida)
+- [Backend · Django (apps/cognivision)](#backend--django-appscognivision)
+- [Frontend · Next.js (apps/web)](#frontend--nextjs-appsweb)
+- [Correr todo a la vez](#correr-todo-a-la-vez)
+- [Variables de entorno](#variables-de-entorno)
+- [Flujo de desarrollo](#flujo-de-desarrollo)
+- [Roadmap](#roadmap)
+- [Preguntas frecuentes](#preguntas-frecuentes)
 
-```sh
-npx create-turbo@latest
+---
+
+## Arquitectura
+- **Extracción de características**: `DeepFace` para obtener *embeddings* faciales.
+- **Clasificador**: modelo supervisado (RandomForest / MLP) entrenado con etiquetas cognitivas:
+  - estrés, fatiga mental, ansiedad visible, cansancio emocional, alta concentración, estado relajado/óptimo.
+- **Backend (Django)**: API que orquesta DeepFace + modelo entrenado.
+- **Frontend (Next.js)**: UI para capturar cámara/webcam, visualizar emoción + estado cognitivo y mostrar un consejo personalizado.
+- **Packages**: utilidades compartidas (tipos, clientes, helpers).
+
+---
+
+## Requisitos
+- **Python 3.10+**
+- **Node.js 18+** y **pnpm 8+**
+- **Git**
+- (Opcional) **FFmpeg** y **OpenCV** si se procesa video localmente.
+
+> Windows: ejecutar en **PowerShell**; para Python se recomienda `python -m venv .venv` y activar el entorno antes de usar Django.
+
+---
+
+## Estructura del repo
+```
+/apps
+  /cognivision        # Backend Django
+    manage.py
+    /cognivision      # settings/urls/wsgi
+    db.sqlite3
+    /.venv            # entorno virtual de Python (local)
+  /web                # Frontend Next.js
+    next.config.js
+    package.json
+/packages             # Módulos compartidos (futuros)
+pnpm-workspace.yaml
+turbo.json
 ```
 
-## What's inside?
+---
 
-This Turborepo includes the following packages/apps:
+## Configuración rápida
+```bash
+# 1) Instalar dependencias del frontend (monorepo)
+pnpm install
 
-### Apps and Packages
+# 2) Backend (crear/activar venv + instalar Django)
+cd apps/cognivision
+python -m venv .venv
+.\.venv\Scripts\Activate   # Windows (PowerShell)
+# source .venv/bin/activate  # macOS/Linux
+pip install django
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+# 3) Migraciones y levantar API
+python manage.py migrate
+python manage.py runserver 8000
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+# 4) En otra terminal, levantar el frontend
+cd apps/web
+pnpm dev
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+---
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+## Backend · Django (`apps/cognivision`)
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+### 1) Activar entorno virtual
+**Windows (PowerShell)**
+```powershell
+cd apps/cognivision
 
-### Develop
+python -m venv .venv
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+.\.venv\Scripts\Activate
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
+### 2) Dependencias mínimas
+```powershell
+pip install django
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+> Próximamente (cuando integres el modelo): `pip install deepface opencv-python-headless numpy scikit-learn`
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+### 3) Migrar base de datos (SQLite por defecto)
+```powershell
+python manage.py migrate
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
+### 4) Ejecutar servidor de desarrollo
+```powershell
+python manage.py runserver 0.0.0.0:8000
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+- API local: http://127.0.0.1:8000/
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+### 5) Crear un superusuario (admin de Django)
+```powershell
+python manage.py createsuperuser
 ```
 
-## Useful Links
+> **Notas**  
+> - Si usarás módulos compartidos de `/packages`, añade su ruta en `settings.py` (ejemplo):
+>   ```python
+>   import sys
+>   from pathlib import Path
+>   BASE_DIR = Path(__file__).resolve().parent.parent
+>   sys.path.append(str(BASE_DIR.parent / "packages"))
+>   ```
+> - Para CORS cuando consuma el frontend, instala y configura `django-cors-headers`.
 
-Learn more about the power of Turborepo:
+---
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+## Frontend · Vite React (`apps/web`)
+
+### 1) Instalar dependencias
+```bash
+cd apps/web
+pnpm install
+```
+
+
+### 2) Ejecutar en desarrollo
+```bash
+pnpm dev
+```
+- App local: http://localhost:3000/
+
+
+## Correr todo a la vez
+
+### Opción A: comandos manuales (dos terminales)
+- Terminal 1 (backend):
+  ```bash
+  cd apps/cognivision && .\.venv\Scripts\Activate && python manage.py runserver 8000
+  ```
+- Terminal 2 (frontend):
+  ```bash
+  cd apps/web && pnpm dev
+  ```
+
+---
+
+## Variables de entorno
+### Backend (Django)
+Crear `.env` (y cargarlo con `python-dotenv` o en settings):
+```
+DEBUG=True
+SECRET_KEY=changeme
+ALLOWED_HOSTS=127.0.0.1,localhost
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+```
+
+
+## Flujo de desarrollo
+1. **Entrenar/actualizar modelo ML** (fuera de este repo inicialmente).
+2. Exportar el modelo (ej. `model.joblib`).
+3. En el **backend**, cargar el modelo y exponer endpoints (`/api/predict`) que:
+   - reciban imagen (o frame de cámara),
+   - obtengan embeddings con DeepFace,
+   - pasen embeddings al clasificador,
+   - devuelvan `{emotion, cognitive_state, advice}`.
+4. El **frontend** consume el endpoint y muestra resultados en tiempo real.
+
+---
+
+## Roadmap
+- [ ] Endpoint `/api/health` y `/api/predict` en Django.
+- [ ] Integración de `deepface` y `opencv-python-headless`.
+- [ ] Entrenamiento + persistencia de modelo (`sklearn`/`joblib`).
+- [ ] UI de cámara en Next.js + overlay de resultados.
+- [ ] Sistema de recomendaciones por estado.
+- [ ] Autenticación básica para panel profesional (telemedicina/RRHH).
+
+---
+
+## Preguntas frecuentes
+**¿No me funciona `django-admin` en Windows?**  
+Activa el entorno: `.\.venv\Scripts\Activate` y usa `python -m django startproject <nombre>` si lo prefieres.
+
+**¿Puedo usar otra DB?**  
+Sí. Instala el driver (`psycopg2-binary` para PostgreSQL) y ajusta `DATABASES` en `settings.py`.
+
+---
