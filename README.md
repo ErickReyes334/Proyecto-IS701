@@ -110,15 +110,15 @@ Para que los archivos en `packages/` también reconozcan los imports (como `deep
  "./apps/api/.venv/Lib/site-packages"
 ]
 }
-
+```
 ---
 
-## Backend · Django (`apps/cognivision`)
+## Backend · Django (`apps/api`)
 
 ### 1) Activar entorno virtual
 **Windows (PowerShell)**
 ```powershell
-cd apps/cognivision
+cd apps/api
 
 python -m venv .venv
 
