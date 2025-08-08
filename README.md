@@ -78,6 +78,38 @@ python manage.py runserver 8000
 cd apps/web
 pnpm dev
 ```
+## 🛠 Configuración del entorno en VS Code (Windows/Linux/macOS)
+
+Para que VS Code reconozca correctamente las dependencias instaladas (como `deepface`, `numpy`, etc.), sigue estos pasos después de crear tu entorno virtual:
+
+### ✅ 1. Seleccionar el intérprete de Python correcto
+
+1. Abre la paleta de comandos con `Ctrl + Shift + P`
+
+2. Escribe y selecciona:  
+Python: Select Interpreter
+
+3. Si usas entorno virtual en `apps/api/.venv`, elige:
+ # En Windows:
+ <ruta_del_proyecto>/apps/api/.venv/Scripts/python.exe 
+# En Linux/macOs:
+<ruta_del_proyecto>/apps/api/.venv/bin/python
+
+> Si no aparece, haz clic en `Enter interpreter path...` → luego `Find...` y navega hasta la ruta del entorno especificado anteriormente.
+
+---
+
+### ✅ 2. (Opcional) Agregar paths adicionales a Pylance
+
+Para que los archivos en `packages/` también reconozcan los imports (como `deepface`), crea o edita el archivo `.vscode/settings.json`:
+
+```json
+{
+"python.analysis.extraPaths": [
+ "./apps/api",
+ "./apps/api/.venv/Lib/site-packages"
+]
+}
 
 ---
 
@@ -96,6 +128,7 @@ python -m venv .venv
 ### 2) Dependencias mínimas
 ```powershell
 pip install django
+pip install tf-keras
 ```
 > Próximamente (cuando integres el modelo): `pip install deepface opencv-python-headless numpy scikit-learn`
 
