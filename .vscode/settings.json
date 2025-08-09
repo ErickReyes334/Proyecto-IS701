@@ -3,5 +3,10 @@
     {
       "mode": "auto"
     }
+  ],
+  "python.analysis.extraPaths": [
+    "./apps/api",
+ "./apps/api/.venv/Lib/site-packages"
   ]
+  
 }

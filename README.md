@@ -62,9 +62,8 @@ turbo.json
 ```bash
 # 1) Instalar dependencias del frontend (monorepo)
 pnpm install
-
 # 2) Backend (crear/activar venv + instalar Django)
-cd apps/cognivision
+cd apps/api
 python -m venv .venv
 .\.venv\Scripts\Activate   # Windows (PowerShell)
 # source .venv/bin/activate  # macOS/Linux
