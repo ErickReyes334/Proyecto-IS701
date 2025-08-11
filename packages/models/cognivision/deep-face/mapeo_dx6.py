@@ -12,47 +12,50 @@ def mapear_emociones_dx6_fila(f):
     sorpresa = _n(f.get('emo_sorpresa'))
     neutro   = _n(f.get('emo_neutro'))
 
-    # reglas combinadas de detección rápida
-    if neutro >= 0.75 and max(feliz, triste, miedo, enojo, asco, sorpresa) <= 0.35:
+    # neutr., feliz y enojo dominantes (reglas duras)
+    if neutro >= 0.80 and max(feliz, triste, miedo, enojo, asco, sorpresa) <= 0.35:
         return "Neutral"
-
-    # miedo + sorpresa => ansiedad
-    if miedo >= 0.50 and sorpresa >= 0.45 and feliz <= 0.40:
-        return "Ansiedad"
-
-    # enojo + asco => estrés
-    if enojo >= 0.50 and asco >= 0.45 and feliz <= 0.40:
-        return "Estrés"
-
-    # tristeza + miedo => depresión con componente ansiosa
-    if triste >= 0.50 and miedo >= 0.45 and feliz <= 0.40:
-        return "Depresión"
-
-    # enojo + miedo => enojo reactivo (ira + temor)
-    if enojo >= 0.50 and miedo >= 0.50:
+    if feliz >= 0.75 and (triste + miedo + enojo) <= 0.55:
+        return "Feliz"
+    if enojo >= 0.80 and (enojo - feliz) >= 0.15 and enojo >= max(triste, miedo):
         return "Enojado"
 
-    # felicidad + sorpresa => feliz excitado (euforia)
-    if feliz >= 0.55 and sorpresa >= 0.50:
+    # asco dominante -> estrés
+    if asco >= 0.80 and feliz <= 0.40:
+        return "Estrés"
+    if asco >= 0.60 and enojo >= 0.50 and feliz <= 0.45:
+        return "Estrés"
+
+    # combinaciones principales
+    if miedo >= 0.65 and sorpresa >= 0.45 and feliz <= 0.45:
+        return "Ansiedad"
+    if triste >= 0.65 and feliz <= 0.35:
+        return "Depresión"
+    if triste >= 0.55 and miedo >= 0.45 and feliz <= 0.45:
+        return "Depresión"
+    if enojo >= 0.60 and miedo >= 0.50 and feliz <= 0.45:
+        return "Enojado"
+    if enojo >= 0.60 and asco >= 0.50 and feliz <= 0.45:
+        return "Estrés"
+    if feliz >= 0.60 and sorpresa >= 0.50 and (triste + miedo + enojo) <= 0.70:
         return "Feliz"
 
-    # tristeza + asco => rechazo + depresión
-    if triste >= 0.55 and asco >= 0.40:
+    # regla “dos negativas altas”
+    neg_altas = sum(v >= 0.55 for v in [enojo, asco, miedo, triste])
+    if neg_altas >= 2 and feliz <= 0.45:
+        if miedo >= 0.55: 
+            return "Ansiedad"
+        if enojo >= 0.55 or asco >= 0.55:
+            return "Estrés"
         return "Depresión"
 
-    #  reglas de detección individual
-    if feliz  >= 0.60 and (triste + miedo) <= 0.35: return "Feliz"
-    if triste >= 0.65 and feliz <= 0.35:            return "Depresión"
-    if miedo  >= 0.60 and feliz <= 0.45:            return "Ansiedad"
-    if enojo  >= 0.60 and feliz <= 0.45:            return "Enojado"
-
-    # sistema de puntajes
-    s_feliz  = 1.1*feliz - 0.5*triste - 0.3*miedo
-    s_dep    = 1.2*triste + 0.4*asco + 0.3*enojo - 0.5*feliz
-    s_ans    = 1.1*miedo + 0.5*sorpresa - 0.3*feliz
-    s_est    = 0.9*enojo + 0.8*asco + 0.5*miedo + 0.3*triste - 0.3*feliz
-    s_enojo  = 1.2*enojo + 0.6*asco - 0.3*feliz
-    s_neutro = 0.8*neutro - 0.4*(enojo + triste + miedo) - 0.2*feliz
+    # puntajes (pesos ajustados para no arrastrar a Depresión con asco)
+    s_feliz  = 1.15*feliz - 0.55*triste - 0.35*miedo - 0.25*enojo
+    s_dep    = 1.30*triste + 0.20*miedo + 0.10*enojo - 0.60*feliz - 0.20*asco
+    s_ans    = 1.30*miedo + 0.60*sorpresa - 0.30*feliz
+    s_est    = 1.10*enojo + 1.00*asco + 0.50*miedo + 0.30*triste - 0.40*feliz
+    s_enojo  = 1.25*enojo + 0.50*asco - 0.40*feliz
+    s_neutro = 0.85*neutro - 0.45*(enojo + triste + miedo) - 0.25*feliz
 
     puntajes = {
         "Feliz": s_feliz, "Depresión": s_dep, "Ansiedad": s_ans,
@@ -63,7 +66,9 @@ def mapear_emociones_dx6_fila(f):
 
     if len(candidatos) == 1:
         return candidatos[0]
-    if "Neutral" in candidatos and neutro < 0.70:
+    if "Neutral" in candidatos and neutro < 0.75:
         candidatos = [c for c in candidatos if c != "Neutral"]
-    for p in ["Feliz","Ansiedad","Estrés","Enojado","Depresión","Neutral"]:
-        if p in candidatos: return p
+        
+    for p in ["Enojado","Estrés","Ansiedad","Depresión","Feliz","Neutral"]:
+        if p in candidatos:
+            return p
