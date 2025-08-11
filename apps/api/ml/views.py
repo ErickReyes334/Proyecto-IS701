@@ -1,12 +1,30 @@
-# api/ml/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
+# --- hack path ---
+import os, sys
+_THIS_DIR = os.path.dirname(__file__)
+_REPO_ROOT = os.path.abspath(os.path.join(_THIS_DIR, "..", "..", ".."))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+# --- fin ---
+
 from .modelo_cargador import obtener_modelo
 from .utils import vector_desde_bytes
-from .consejos import generar_consejos  # 👈 nuevo import
 
-# Carga/caché del modelo emocional
+from packages.models.cognivision.recomendacion.reco_mlp import load_model, predict_from_scores
+
+RECO_WEIGHTS_DEFAULT = os.path.join(
+    _REPO_ROOT, "packages", "models", "cognivision", "recomendacion", "reco_mlp.pt"
+)
+RECO_WEIGHTS = os.environ.get("RECO_MLP_WEIGHTS", RECO_WEIGHTS_DEFAULT)
+RECO_MODEL, RECO_DEVICE = load_model(RECO_WEIGHTS)
+
+def recommend_from_scores(scores: dict, simple: bool = False):
+    return predict_from_scores(RECO_MODEL, RECO_DEVICE, scores, simple=simple)
+
+# Carga/caché del modelo emocional (tu clasificador existente)
 MODELO, COLUMNAS, CLASES = obtener_modelo()
 
 class PrediccionImagenView(APIView):
@@ -16,7 +34,6 @@ class PrediccionImagenView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
         imagen = request.FILES['imagen']
         try:
-            # 1️⃣ Predicción de emociones
             fila, X = vector_desde_bytes(
                 imagen.read(),
                 columnas=COLUMNAS,
@@ -27,22 +44,16 @@ class PrediccionImagenView(APIView):
                 proba = MODELO.predict_proba(X)[0]
                 scores = {cl: float(p) for cl, p in zip(CLASES, proba)}
             else:
-                scores = {}
+                scores = {cl: (1.0 if cl == pred else 0.0) for cl in CLASES}
 
-            resultado_prediccion = {
+            simple = request.GET.get("simple", "false").lower() in {"1", "true", "yes"}
+            recomendaciones = recommend_from_scores(scores, simple=simple)
+
+            return Response({
                 "label": pred,
                 "scores": scores,
-                "emo_features": fila
-            }
-
-            # 2️⃣ Consejos dinámicos
-            k = int(request.GET.get("k", 3))
-            por_clase = int(request.GET.get("por_clase", 2))
-            semilla = int(request.GET.get("semilla", 42))
-            consejos = generar_consejos(resultado_prediccion, k=k, por_clase=por_clase, semilla=semilla)
-
-            # 3️⃣ Respuesta combinada
-            return Response({**resultado_prediccion, "consejos": consejos})
-
+                "emo_features": fila,
+                "recomendaciones": recomendaciones
+            })
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
