@@ -74,9 +74,6 @@ export function CameraOrFilePicker({ onPick }: Props) {
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Tip: en iOS/Android puedes usar cámara web si estás en HTTPS (o localhost).
-            </p>
           </div>
         ) : (
           <div className="space-y-3">
