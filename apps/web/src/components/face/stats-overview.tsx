@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { TrendingUp, Users, Clock, Brain } from "lucide-react"
 
 const stats = [
@@ -62,36 +61,6 @@ export function StatsOverview() {
           </Card>
         ))}
       </div>
-
-      {/* System Health */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Estado del Sistema</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>CPU DeepFace</span>
-              <span>67%</span>
-            </div>
-            <Progress value={67} className="h-2" />
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Memoria GPU</span>
-              <span>84%</span>
-            </div>
-            <Progress value={84} className="h-2" />
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Latencia Promedio</span>
-              <span>45ms</span>
-            </div>
-            <Progress value={25} className="h-2" />
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Recent Alerts */}
       <Card>
